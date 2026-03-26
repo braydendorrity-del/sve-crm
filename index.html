@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SVE CRM">
+<meta name="theme-color" content="#185FA5">
+<title>SVE Field CRM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f4f2;color:#1a1a1a;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e3;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:16px;font-weight:600;color:#1a1a1a}
+.topbar-sub{font-size:11px;color:#888;margin-top:1px}
+.nav{display:flex;gap:2px}
+.nav button{font-size:12px;padding:6px 11px;border-radius:8px;border:1px solid transparent;cursor:pointer;background:transparent;color:#666;font-weight:500;transition:all .15s}
+.nav button.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.content{padding:16px;max-width:600px;margin:0 auto}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.metric-card{background:#fff;border-radius:10px;padding:12px 8px;text-align:center;border:1px solid #e5e5e3}
+.metric-val{font-size:22px;font-weight:600;color:#185FA5}
+.metric-lbl{font-size:11px;color:#888;margin-top:2px}
+.card{background:#fff;border-radius:12px;border:1px solid #e5e5e3;padding:16px;margin-bottom:12px}
+label{font-size:12px;color:#666;display:block;margin-bottom:4px;margin-top:12px;font-weight:500}
+label:first-child{margin-top:0}
+input,select,textarea{width:100%;font-size:15px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;font-family:inherit;appearance:none;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,0.1)}
+textarea{resize:vertical;min-height:72px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:14px;padding:10px 16px;border-radius:8px;cursor:pointer;background:#fff;color:#1a1a1a;font-family:inherit;border:1px solid #ddd;font-weight:500;transition:all .15s;min-height:44px}
+.btn:active{transform:scale(0.97);opacity:.85}
+.btn-primary{background:#185FA5;border-color:#185FA5;color:#fff}
+.btn-primary:active{background:#0C447C}
+.btn-danger{background:#fff;border-color:#e24b4a;color:#e24b4a}
+.btn-sm{font-size:13px;padding:7px 12px;min-height:36px}
+.btn-full{width:100%}
+.badge{display:inline-block;font-size:11px;padding:3px 8px;border-radius:6px;font-weight:600}
+.badge-lead{background:#dbeafe;color:#1e40af}
+.badge-customer{background:#dcfce7;color:#166534}
+.badge-inactive{background:#f1f0e8;color:#666}
+.customer-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0ee;cursor:pointer}
+.customer-row:last-child{border-bottom:none}
+.customer-row:active{opacity:.6}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.av-blue{background:#dbeafe;color:#185FA5}
+.av-green{background:#dcfce7;color:#166534}
+.av-gray{background:#f1f0e8;color:#666}
+.customer-info{flex:1;min-width:0}
+.customer-name{font-size:15px;font-weight:600;color:#1a1a1a}
+.customer-sub{font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.search-input{background:#f4f4f2;border:1px solid #e5e5e3;font-size:15px;padding:10px 14px;border-radius:10px;width:100%;margin-bottom:12px}
+.search-input:focus{background:#fff;border-color:#185FA5;outline:none}
+.filter-row{display:flex;gap:8px;margin-bottom:12px}
+.filter-row select{flex:1;font-size:13px;padding:8px 10px;background:#f4f4f2;border:1px solid #e5e5e3;border-radius:8px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.section-title{font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.equipment-tag{display:inline-block;font-size:12px;padding:4px 10px;background:#f4f4f2;border:1px solid #e5e5e3;border-radius:6px;color:#444;margin:3px}
+.day-customer{display:flex;align-items:center;gap:10px;padding:12px;background:#fff;border:1px solid #e5e5e3;border-radius:10px;margin-bottom:8px}
+.stop-num{width:28px;height:28px;border-radius:50%;background:#185FA5;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:100;overflow-y:auto;padding:20px 0 40px}
+.modal{background:#fff;border-radius:16px 16px 0 0;width:100%;position:fixed;bottom:0;left:0;max-height:90vh;overflow-y:auto;padding:20px 16px 40px}
+.modal-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px}
+.modal-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-title{font-size:17px;font-weight:700}
+.close-btn{background:#f4f4f2;border:none;cursor:pointer;font-size:20px;color:#666;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1}
+.tabs{display:flex;gap:0;border-bottom:1px solid #e5e5e3;margin-bottom:16px}
+.tab{font-size:14px;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;color:#888;background:none;border-left:none;border-right:none;border-top:none;font-family:inherit;font-weight:500;transition:all .15s;flex:1;text-align:center}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:700}
+.detail-lbl{font-size:12px;color:#888;font-weight:500;margin-top:12px}
+.detail-val{font-size:15px;color:#1a1a1a;margin-top:3px}
+.empty-state{text-align:center;padding:40px 20px;color:#aaa;font-size:14px}
+.empty-icon{font-size:36px;margin-bottom:8px}
+.zip-header{font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:4px}
+.call-btn{background:#dcfce7;border:none;color:#166534;font-size:13px;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-family:inherit;min-height:36px}
+.call-btn:active{opacity:.7}
+a{color:#185FA5}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">SVE Field CRM</div>
+    <div class="topbar-sub">South Valley Equipment</div>
+  </div>
+  <div class="nav">
+    <button class="active" onclick="showView('customers')">Contacts</button>
+    <button onclick="showView('dayplan')">Day Plan</button>
+    <button onclick="showView('settings')">&#9881;</button>
+  </div>
+</div>
+
+<!-- CUSTOMERS VIEW -->
+<div class="content" id="view-customers">
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-val" id="m-total">0</div><div class="metric-lbl">Total</div></div>
+    <div class="metric-card"><div class="metric-val" id="m-leads">0</div><div class="metric-lbl">Leads</div></div>
+    <div class="metric-card"><div class="metric-val" id="m-cust">0</div><div class="metric-lbl">Customers</div></div>
+  </div>
+  <div class="card">
+    <input class="search-input" type="search" id="search-input" placeholder="Search name, zip, equipment..." oninput="renderList()">
+    <div class="filter-row">
+      <select id="filter-status" onchange="renderList()">
+        <option value="">All statuses</option>
+        <option value="lead">Leads</option>
+        <option value="customer">Customers</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <select id="filter-zip" onchange="renderList()">
+        <option value="">All zips</option>
+      </select>
+    </div>
+    <div id="customer-list"><div class="empty-state"><div class="empty-icon">📋</div>No contacts yet. Add your first one.</div></div>
+  </div>
+  <button class="btn btn-primary btn-full" onclick="openAddModal()" style="margin-top:4px">+ Add contact</button>
+</div>
+
+<!-- DAY PLAN VIEW -->
+<div class="content" id="view-dayplan" style="display:none">
+  <div class="card" style="padding:12px">
+    <div class="section-title">Plan your day</div>
+    <label style="margin-top:0">Select zip code for today</label>
+    <select id="day-zip" onchange="renderDayPlan()" style="font-size:16px;padding:12px">
+      <option value="">Choose a zip code...</option>
+    </select>
+    <input type="date" id="day-date" style="margin-top:10px;font-size:15px">
+  </div>
+  <div id="day-count-bar" style="display:none;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+    <span id="day-count" style="font-size:14px;color:#666;font-weight:500"></span>
+    <button class="btn btn-primary btn-sm" onclick="openRouteMap()">📍 Open in Maps</button>
+  </div>
+  <div id="day-stops"><div class="empty-state"><div class="empty-icon">📍</div>Select a zip code to see your stops</div></div>
+</div>
+
+<!-- SETTINGS VIEW -->
+<div class="content" id="view-settings" style="display:none">
+  <div class="card">
+    <div class="section-title">Google Maps</div>
+    <label style="margin-top:0">API Key (optional)</label>
+    <input type="password" id="gmaps-key" placeholder="AIza... — paste your key here" oninput="saveSettings()">
+    <div style="font-size:12px;color:#888;margin-top:8px;line-height:1.6">Without a key: tapping "Open in Maps" opens Google Maps with your stops. With a key: enables optimized multi-stop routing. Key is stored on this device only.</div>
+    <div id="maps-status" style="margin-top:8px;font-size:13px;font-weight:500"></div>
+  </div>
+  <div class="card">
+    <div class="section-title">Company</div>
+    <label style="margin-top:0">Company name</label>
+    <input type="text" id="co-name" placeholder="South Valley Equipment" oninput="saveSettings()">
+    <label>Home base zip</label>
+    <input type="text" id="co-zip" placeholder="84095" maxlength="5" oninput="saveSettings()">
+  </div>
+  <div class="card">
+    <div class="section-title">Data</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-full" onclick="exportData()">⬇ Export backup (JSON)</button>
+      <label class="btn btn-full" style="cursor:pointer;margin:0">⬆ Import backup<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+      <button class="btn btn-full" onclick="loadSampleData()" style="color:#888;border-color:#e5e5e3;font-size:13px">Load sample data</button>
+    </div>
+    <div style="font-size:12px;color:#aaa;margin-top:12px;line-height:1.6">Data is saved on this device. Export regularly as a backup. To move data to a new phone: export on old phone, import on new one.</div>
+  </div>
+</div>
+
+<!-- MODAL (bottom sheet) -->
+<div id="modal-container" style="display:none">
+  <div class="modal-overlay" onclick="handleOverlayClick(event)">
+    <div class="modal" id="modal-content">
+      <div class="modal-handle"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let customers = JSON.parse(localStorage.getItem('sve_crm_v2') || '[]');
+let settings = JSON.parse(localStorage.getItem('sve_crm_settings_v2') || '{}');
+
+function save() {
+  localStorage.setItem('sve_crm_v2', JSON.stringify(customers));
+  renderList(); updateMetrics(); updateZips();
+}
+
+function showView(v) {
+  ['customers','dayplan','settings'].forEach(n => {
+    document.getElementById('view-'+n).style.display = n===v ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav button').forEach((b,i) => {
+    b.classList.toggle('active', ['customers','dayplan','settings'][i]===v);
+  });
+  if(v==='dayplan') renderDayPlan();
+  if(v==='settings') loadSettingsUI();
+  window.scrollTo(0,0);
+}
+
+function updateMetrics() {
+  document.getElementById('m-total').textContent = customers.length;
+  document.getElementById('m-leads').textContent = customers.filter(c=>c.status==='lead').length;
+  document.getElementById('m-cust').textContent = customers.filter(c=>c.status==='customer').length;
+}
+
+function updateZips() {
+  const zips = [...new Set(customers.map(c=>c.zip).filter(Boolean))].sort();
+  ['filter-zip','day-zip'].forEach(id => {
+    const sel = document.getElementById(id); if(!sel) return;
+    const cur = sel.value;
+    const first = sel.options[0].outerHTML;
+    sel.innerHTML = first + zips.map(z=>`<option value="${z}">${z}</option>`).join('');
+    if(cur) sel.value = cur;
+  });
+}
+
+function initials(name) {
+  return (name||'?').split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+}
+function avClass(s) { return s==='customer'?'av-green':s==='lead'?'av-blue':'av-gray'; }
+
+function renderList() {
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const fs = document.getElementById('filter-status').value;
+  const fz = document.getElementById('filter-zip').value;
+  let list = customers.filter(c => {
+    const mq = !q || (c.company||'').toLowerCase().includes(q) || (c.contact||'').toLowerCase().includes(q) ||
+      (c.zip||'').includes(q) || (c.equipment||[]).some(e=>e.toLowerCase().includes(q));
+    return mq && (!fs||c.status===fs) && (!fz||c.zip===fz);
+  });
+  const el = document.getElementById('customer-list');
+  if(!list.length){el.innerHTML='<div class="empty-state">No contacts match.</div>';return;}
+  el.innerHTML = list.map(c=>`
+    <div class="customer-row" onclick="openDetail('${c.id}')">
+      <div class="avatar ${avClass(c.status)}">${initials(c.company)}</div>
+      <div class="customer-info">
+        <div class="customer-name">${c.company}</div>
+        <div class="customer-sub">${[c.contact,c.city,c.zip].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <span class="badge badge-${c.status||'inactive'}">${c.status||'inactive'}</span>
+        ${c.equipment&&c.equipment.length?`<span style="font-size:11px;color:#aaa">${c.equipment.length} unit${c.equipment.length>1?'s':''}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function openAddModal() {
+  const id = 'c_'+Date.now();
+  showModal(buildForm(null, id));
+}
+
+function openDetail(id) {
+  const c = customers.find(x=>x.id===id);
+  if(c) showModal(buildDetail(c));
+}
+
+function showModal(html) {
+  document.getElementById('modal-content').innerHTML = '<div class="modal-handle"></div>' + html;
+  document.getElementById('modal-container').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-container').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) {
+  if(e.target.classList.contains('modal-overlay')) closeModal();
+}
+
+function buildForm(c, id) {
+  const eq = c ? (c.equipment||[]).join(', ') : '';
+  return `
+    <div class="modal-title-row">
+      <div class="modal-title">${c?'Edit contact':'New contact'}</div>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    <label style="margin-top:0">Company / Business name *</label>
+    <input id="f-company" value="${esc(c?c.company:'')}" placeholder="Acme Excavation" autocomplete="organization">
+    <div class="form-row">
+      <div><label>Status</label>
+        <select id="f-status">
+          <option value="lead" ${(!c||c.status==='lead')?'selected':''}>Lead</option>
+          <option value="customer" ${c&&c.status==='customer'?'selected':''}>Customer</option>
+          <option value="inactive" ${c&&c.status==='inactive'?'selected':''}>Inactive</option>
+        </select>
+      </div>
+      <div><label>Zip code</label>
+        <input id="f-zip" value="${esc(c?c.zip||'':'')}" placeholder="84070" maxlength="5" type="tel">
+      </div>
+    </div>
+    <label>Contact name</label>
+    <input id="f-contact" value="${esc(c?c.contact||'':'')}" placeholder="John Smith" autocomplete="name">
+    <label>Phone</label>
+    <input id="f-phone" value="${esc(c?c.phone||'':'')}" placeholder="(801) 555-0100" type="tel" autocomplete="tel">
+    <label>Email</label>
+    <input id="f-email" value="${esc(c?c.email||'':'')}" placeholder="john@company.com" type="email" autocomplete="email">
+    <label>Website</label>
+    <input id="f-website" value="${esc(c?c.website||'':'')}" placeholder="company.com" type="url" autocomplete="url" inputmode="url">
+    <label>Street address</label>
+    <input id="f-address" value="${esc(c?c.address||'':'')}" placeholder="123 Main St" autocomplete="street-address">
+    <div class="form-row">
+      <div><label>City</label><input id="f-city" value="${esc(c?c.city||'':'')}" placeholder="Sandy"></div>
+      <div><label>State</label><input id="f-state" value="${esc(c?c.state||'UT':'')}" placeholder="UT" maxlength="2"></div>
+    </div>
+    <label>Region / County</label>
+    <input id="f-region" value="${esc(c?c.region||'':'')}" placeholder="Salt Lake County">
+    <label>Equipment (make/model, comma separated)</label>
+    <input id="f-equipment" value="${esc(eq)}" placeholder="Bobcat S76, John Deere 317G">
+    <label>Notes</label>
+    <textarea id="f-notes">${esc(c?c.notes||'':'')}</textarea>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+      <button class="btn btn-primary btn-full" onclick="saveForm('${id}','${c?'edit':'new'}')">Save contact</button>
+      ${c?`<button class="btn btn-full btn-danger" onclick="deleteCustomer('${c.id}')">Delete contact</button>`:''}
+      <button class="btn btn-full" onclick="closeModal()">Cancel</button>
+    </div>`;
+}
+
+function buildDetail(c) {
+  const eq = c.equipment||[];
+  const fullAddr = [c.address,c.city,c.state,c.zip].filter(Boolean).join(', ');
+  return `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div class="avatar ${avClass(c.status)}" style="width:48px;height:48px;font-size:16px">${initials(c.company)}</div>
+      <div>
+        <div style="font-size:18px;font-weight:700">${c.company}</div>
+        <span class="badge badge-${c.status}">${c.status}</span>
+      </div>
+      <button class="close-btn" style="margin-left:auto" onclick="closeModal()">×</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(this,'dt-info')">Info</button>
+      <button class="tab" onclick="switchTab(this,'dt-equip')">Equipment</button>
+      <button class="tab" onclick="switchTab(this,'dt-notes')">Notes</button>
+    </div>
+    <div id="dt-info">
+      ${c.contact?`<div class="detail-lbl">Contact</div><div class="detail-val">${c.contact}</div>`:''}
+      ${c.phone?`<div class="detail-lbl">Phone</div><div class="detail-val"><a href="tel:${c.phone}">${c.phone}</a></div>`:''}
+      ${c.email?`<div class="detail-lbl">Email</div><div class="detail-val"><a href="mailto:${c.email}">${c.email}</a></div>`:''}
+      ${c.website?`<div class="detail-lbl">Website</div><div class="detail-val"><a href="https://${c.website.replace(/^https?:\/\//,'')}" target="_blank">${c.website}</a></div>`:''}
+      ${fullAddr?`<div class="detail-lbl">Address</div><div class="detail-val"><a href="https://maps.google.com/?q=${encodeURIComponent(fullAddr)}" target="_blank">${fullAddr}</a></div>`:''}
+      ${c.region?`<div class="detail-lbl">Region</div><div class="detail-val">${c.region}</div>`:''}
+    </div>
+    <div id="dt-equip" style="display:none">
+      ${eq.length?'<div style="margin-top:4px">'+eq.map(e=>`<span class="equipment-tag">${e}</span>`).join('')+'</div>':'<div class="empty-state">No equipment on file.</div>'}
+    </div>
+    <div id="dt-notes" style="display:none">
+      <div style="font-size:15px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap;margin-top:4px">${c.notes||'No notes yet.'}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:24px">
+      ${c.phone?`<a href="tel:${c.phone}" class="btn btn-full" style="text-decoration:none;background:#dcfce7;border-color:#dcfce7;color:#166534;font-weight:700">📞 Call ${c.contact||c.company}</a>`:''}
+      <button class="btn btn-primary btn-full" onclick="editFromDetail('${c.id}')">Edit contact</button>
+    </div>`;
+}
+
+function switchTab(btn, show) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['dt-info','dt-equip','dt-notes'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=id===show?'block':'none';
+  });
+}
+
+function editFromDetail(id) {
+  const c = customers.find(x=>x.id===id);
+  if(c) showModal(buildForm(c, id));
+}
+
+function saveForm(id, mode) {
+  const eq = (document.getElementById('f-equipment').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const data = {
+    id,
+    company: (document.getElementById('f-company').value||'').trim(),
+    status: document.getElementById('f-status').value,
+    contact: (document.getElementById('f-contact').value||'').trim(),
+    phone: (document.getElementById('f-phone').value||'').trim(),
+    email: (document.getElementById('f-email').value||'').trim(),
+    website: (document.getElementById('f-website').value||'').trim(),
+    address: (document.getElementById('f-address').value||'').trim(),
+    city: (document.getElementById('f-city').value||'').trim(),
+    state: (document.getElementById('f-state').value||'').trim(),
+    zip: (document.getElementById('f-zip').value||'').trim(),
+    region: (document.getElementById('f-region').value||'').trim(),
+    equipment: eq,
+    notes: (document.getElementById('f-notes').value||'').trim(),
+    created: mode==='new' ? Date.now() : (customers.find(c=>c.id===id)||{}).created
+  };
+  if(!data.company){alert('Company name is required.');return;}
+  if(mode==='new') customers.push(data);
+  else { const i=customers.findIndex(c=>c.id===id); if(i>-1) customers[i]=data; }
+  save();
+  closeModal();
+}
+
+function deleteCustomer(id) {
+  if(!confirm('Delete this contact? This cannot be undone.')) return;
+  customers = customers.filter(c=>c.id!==id);
+  save();
+  closeModal();
+}
+
+function renderDayPlan() {
+  const zip = document.getElementById('day-zip').value;
+  const list = zip ? customers.filter(c=>c.zip===zip) : [];
+  const el = document.getElementById('day-stops');
+  const cntBar = document.getElementById('day-count-bar');
+  const cnt = document.getElementById('day-count');
+  if(!zip){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📍</div>Select a zip code to see your stops</div>';
+    cntBar.style.display='none';
+    return;
+  }
+  cntBar.style.display='flex';
+  cnt.textContent = `${list.length} stop${list.length!==1?'s':''} in ${zip}`;
+  if(!list.length){el.innerHTML='<div class="empty-state">No contacts in zip '+zip+'</div>';return;}
+  el.innerHTML = list.map((c,i)=>`
+    <div class="day-customer" onclick="openDetail('${c.id}')">
+      <div class="stop-num">${i+1}</div>
+      <div class="customer-info">
+        <div class="customer-name">${c.company}</div>
+        <div class="customer-sub">${c.contact||''}</div>
+        <div class="customer-sub">${[c.address,c.city].filter(Boolean).join(', ')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+        <span class="badge badge-${c.status}">${c.status}</span>
+        ${c.phone?`<a href="tel:${c.phone}" class="call-btn" onclick="event.stopPropagation()">Call</a>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function openRouteMap() {
+  const zip = document.getElementById('day-zip').value;
+  if(!zip){alert('Select a zip code first.');return;}
+  const list = customers.filter(c=>c.zip===zip);
+  if(!list.length){alert('No contacts in this zip.');return;}
+  const addrs = list.map(c=>encodeURIComponent([c.address,c.city,c.state,c.zip].filter(Boolean).join(', ')));
+  const origin = settings.coZip || zip;
+  if(addrs.length===1) {
+    window.open(`https://www.google.com/maps/dir/${encodeURIComponent(origin)}/${addrs[0]}`,'_blank');
+  } else {
+    const dest = addrs[addrs.length-1];
+    const waypoints = addrs.slice(0,-1).join('|');
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`,'_blank');
+  }
+}
+
+function loadSettingsUI() {
+  document.getElementById('gmaps-key').value = settings.gmapsKey||'';
+  document.getElementById('co-name').value = settings.coName||'';
+  document.getElementById('co-zip').value = settings.coZip||'';
+  const st = document.getElementById('maps-status');
+  st.textContent = settings.gmapsKey ? '✓ API key saved' : '';
+  st.style.color = '#166534';
+}
+
+function saveSettings() {
+  settings.gmapsKey = (document.getElementById('gmaps-key').value||'').trim();
+  settings.coName = (document.getElementById('co-name').value||'').trim();
+  settings.coZip = (document.getElementById('co-zip').value||'').trim();
+  localStorage.setItem('sve_crm_settings_v2', JSON.stringify(settings));
+  const st = document.getElementById('maps-status');
+  if(st){st.textContent = settings.gmapsKey?'✓ API key saved':'';st.style.color='#166534';}
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify({customers,settings},null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sve_crm_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function importData(e) {
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if(d.customers) customers = d.customers;
+      if(d.settings) { settings = d.settings; localStorage.setItem('sve_crm_settings_v2', JSON.stringify(settings)); }
+      save();
+      alert('Import successful — '+customers.length+' contacts loaded.');
+    } catch { alert('Could not read file. Make sure it\'s a valid SVE CRM backup.'); }
+  };
+  r.readAsText(f);
+}
+
+function loadSampleData() {
+  if(!confirm('This will add 6 sample contacts. Continue?')) return;
+  const sample = [
+    {id:'s1',company:'Summit Excavation LLC',status:'customer',contact:'Travis Hill',phone:'(801) 555-0121',email:'travis@summitexc.com',website:'summitexc.com',address:'4821 W Jordan Pkwy',city:'West Jordan',state:'UT',zip:'84088',region:'Salt Lake',equipment:['Bobcat S76','John Deere 317G'],notes:'Good customer. Due for service on the S76 this spring.',created:Date.now()},
+    {id:'s2',company:'Redrock Landscaping',status:'lead',contact:'Maria Delgado',phone:'(435) 555-0188',email:'maria@redrockls.com',website:'',address:'210 N Main',city:'Spanish Fork',state:'UT',zip:'84660',region:'Utah County',equipment:['Kubota SVL75-2'],notes:'Met at trade show. Interested in rental options.',created:Date.now()},
+    {id:'s3',company:'Wasatch Utility Contractors',status:'customer',contact:'Dale Farnsworth',phone:'(801) 555-0244',email:'dfarnsworth@wasatchuc.com',website:'wasatchuc.com',address:'1100 S State St',city:'Orem',state:'UT',zip:'84097',region:'Utah County',equipment:['Bobcat T650','Case SR210'],notes:'Fleet of 4. Call before quarter end.',created:Date.now()},
+    {id:'s4',company:'Iron County Rentals',status:'lead',contact:'',phone:'(435) 555-0309',email:'',website:'',address:'800 W 200 N',city:'Cedar City',state:'UT',zip:'84720',region:'Iron County',equipment:[],notes:'Cold call. Left voicemail.',created:Date.now()},
+    {id:'s5',company:'Provo Pipeline Services',status:'customer',contact:'Greg Moss',phone:'(801) 555-0175',email:'gmoss@provopipe.com',website:'provopipe.com',address:'3300 N University Ave',city:'Provo',state:'UT',zip:'84604',region:'Utah County',equipment:['Bobcat T740','Vermeer RT100'],notes:'Needs parts quote on T740 hydraulic pump.',created:Date.now()},
+    {id:'s6',company:'Taylorsville Concrete',status:'inactive',contact:'Rod Simmons',phone:'(801) 555-0092',email:'rod@tvcc.com',website:'',address:'5500 S Redwood Rd',city:'Taylorsville',state:'UT',zip:'84123',region:'Salt Lake',equipment:['Cat 246D'],notes:'Bought their own parts supplier. Check back in 6 months.',created:Date.now()},
+  ];
+  sample.forEach(s=>{ if(!customers.find(c=>c.id===s.id)) customers.push(s); });
+  save();
+  alert('Sample data loaded.');
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('day-date').value = new Date().toISOString().slice(0,10);
+save();
+updateMetrics();
+updateZips();
+</script>
+</body>
+</html>
