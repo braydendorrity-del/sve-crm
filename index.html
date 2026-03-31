@@ -137,7 +137,10 @@ a{color:#185FA5}
 <div class="content" id="view-settings" style="display:none">
   <div class="card">
     <div class="section-title">Google Maps</div>
-    <div style="font-size:13px;color:#166534;font-weight:500">✓ Google Maps enabled — uses your current GPS location as route start</div>
+    <label style="margin-top:0">API Key</label>
+    <input type="password" id="gmaps-key" placeholder="AIza..." oninput="saveSettings()">
+    <div style="font-size:12px;color:#888;margin-top:8px;line-height:1.6">Paste your Google Maps API key. Saved on this device only — you only need to do this once.</div>
+    <div id="maps-status" style="margin-top:8px;font-size:13px;font-weight:500"></div>
   </div>
   <div class="card">
     <div class="section-title">Company</div>
@@ -420,7 +423,6 @@ function renderDayPlan() {
     </div>`).join('');
 }
 
-const GMAPS_KEY = 'AIzaSyBuLDE9zed-YjsKLlrXsQQKPevx87PHSD0';
 
 function openRouteMap() {
   const zip = document.getElementById('day-zip').value;
