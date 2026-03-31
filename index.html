@@ -120,17 +120,21 @@ a{color:#185FA5}
 <div class="content" id="view-dayplan" style="display:none">
   <div class="card" style="padding:12px">
     <div class="section-title">Plan your day</div>
-    <label style="margin-top:0">Select zip code for today</label>
+    <label style="margin-top:0">Region</label>
+    <select id="day-region" onchange="onRegionChange()" style="font-size:16px;padding:12px">
+      <option value="">All regions...</option>
+    </select>
+    <label>Zip code</label>
     <select id="day-zip" onchange="renderDayPlan()" style="font-size:16px;padding:12px">
-      <option value="">Choose a zip code...</option>
+      <option value="">All zips in region...</option>
     </select>
     <input type="date" id="day-date" style="margin-top:10px;font-size:15px">
   </div>
-  <div id="day-count-bar" style="display:none;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+  <div id="day-count-bar" style="margin-bottom:10px;display:none;justify-content:space-between;align-items:center">
     <span id="day-count" style="font-size:14px;color:#666;font-weight:500"></span>
     <button class="btn btn-primary btn-sm" onclick="openRouteMap()">📍 Open in Maps</button>
   </div>
-  <div id="day-stops"><div class="empty-state"><div class="empty-icon">📍</div>Select a zip code to see your stops</div></div>
+  <div id="day-stops"><div class="empty-state"><div class="empty-icon">📍</div>Select a region or zip to see your stops</div></div>
 </div>
 
 <!-- SETTINGS VIEW -->
@@ -197,14 +201,41 @@ function updateMetrics() {
 }
 
 function updateZips() {
+  // Update contacts tab zip filter (plain zips)
   const zips = [...new Set(customers.map(c=>c.zip).filter(Boolean))].sort();
-  ['filter-zip','day-zip'].forEach(id => {
-    const sel = document.getElementById(id); if(!sel) return;
-    const cur = sel.value;
-    const first = sel.options[0].outerHTML;
-    sel.innerHTML = first + zips.map(z=>`<option value="${z}">${z}</option>`).join('');
-    if(cur) sel.value = cur;
-  });
+  const fz = document.getElementById('filter-zip'); if(!fz) return;
+  const curFz = fz.value;
+  fz.innerHTML = '<option value="">All zips</option>' + zips.map(z=>`<option value="${z}">${z}</option>`).join('');
+  if(curFz) fz.value = curFz;
+
+  // Update day plan region dropdown
+  const regions = [...new Set(customers.map(c=>c.region).filter(Boolean))].sort();
+  const dr = document.getElementById('day-region'); if(!dr) return;
+  const curReg = dr.value;
+  dr.innerHTML = '<option value="">All regions...</option>' + regions.map(r=>`<option value="${r}">${r}</option>`).join('');
+  if(curReg) dr.value = curReg;
+
+  // Update day plan zip dropdown based on current region
+  updateDayZips();
+}
+
+function updateDayZips() {
+  const region = document.getElementById('day-region').value;
+  const pool = region ? customers.filter(c=>c.region===region) : customers;
+  // Build zip -> city map
+  const zipCity = {};
+  pool.forEach(c => { if(c.zip && !zipCity[c.zip]) zipCity[c.zip] = c.city||''; });
+  const sortedZips = Object.keys(zipCity).sort();
+  const dz = document.getElementById('day-zip'); if(!dz) return;
+  const curZ = dz.value;
+  dz.innerHTML = '<option value="">All zips in region...</option>' +
+    sortedZips.map(z => `<option value="${z}">${z}${zipCity[z]?' — '+zipCity[z]:''}</option>`).join('');
+  if(curZ && sortedZips.includes(curZ)) dz.value = curZ; else dz.value = '';
+}
+
+function onRegionChange() {
+  updateDayZips();
+  renderDayPlan();
 }
 
 function initials(name) {
@@ -395,58 +426,138 @@ function deleteCustomer(id) {
 }
 
 function renderDayPlan() {
+  const region = document.getElementById('day-region').value;
   const zip = document.getElementById('day-zip').value;
-  const list = zip ? customers.filter(c=>c.zip===zip) : [];
   const el = document.getElementById('day-stops');
   const cntBar = document.getElementById('day-count-bar');
   const cnt = document.getElementById('day-count');
-  if(!zip){
-    el.innerHTML='<div class="empty-state"><div class="empty-icon">📍</div>Select a zip code to see your stops</div>';
+
+  if(!region && !zip) {
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📍</div>Select a region or zip to see your stops</div>';
     cntBar.style.display='none';
     return;
   }
+
+  let list = customers;
+  if(zip) list = list.filter(c=>c.zip===zip);
+  else if(region) list = list.filter(c=>c.region===region);
+
   cntBar.style.display='flex';
-  cnt.textContent = `${list.length} stop${list.length!==1?'s':''} in ${zip}`;
-  if(!list.length){el.innerHTML='<div class="empty-state">No contacts in zip '+zip+'</div>';return;}
-  el.innerHTML = list.map((c,i)=>`
-    <div class="day-customer" onclick="openDetail('${c.id}')">
-      <div class="stop-num">${i+1}</div>
-      <div class="customer-info">
-        <div class="customer-name">${c.company}</div>
-        <div class="customer-sub">${c.contact||''}</div>
-        <div class="customer-sub">${[c.address,c.city].filter(Boolean).join(', ')}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
-        <span class="badge badge-${c.status}">${c.status}</span>
-        ${c.phone?`<a href="tel:${c.phone}" class="call-btn" onclick="event.stopPropagation()">Call</a>`:''}
-      </div>
-    </div>`).join('');
+  const label = zip ? zip : region;
+  cnt.textContent = `${list.length} stop${list.length!==1?'s':''} in ${label}`;
+
+  if(!list.length){el.innerHTML='<div class="empty-state">No contacts found</div>';return;}
+
+  // Group by zip when showing full region
+  if(region && !zip) {
+    const byZip = {};
+    list.forEach(c => { const z=c.zip||'No zip'; if(!byZip[z]) byZip[z]=[]; byZip[z].push(c); });
+    let stopNum = 0;
+    el.innerHTML = Object.keys(byZip).sort().map(z => {
+      const city = byZip[z][0].city||'';
+      const header = `<div style="font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:12px 0 6px">${z}${city?' — '+city:''}</div>`;
+      const rows = byZip[z].map(c => {
+        stopNum++;
+        return `<div class="day-customer" onclick="openDetail('${c.id}')">
+          <div class="stop-num">${stopNum}</div>
+          <div class="customer-info">
+            <div class="customer-name">${c.company}</div>
+            <div class="customer-sub">${c.contact||''}</div>
+            <div class="customer-sub">${c.address||''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+            <span class="badge badge-${c.status}">${c.status}</span>
+            ${c.phone?`<a href="tel:${c.phone}" class="call-btn" onclick="event.stopPropagation()">Call</a>`:''}
+          </div>
+        </div>`;
+      }).join('');
+      return header + rows;
+    }).join('');
+  } else {
+    el.innerHTML = list.map((c,i)=>`
+      <div class="day-customer" onclick="openDetail('${c.id}')">
+        <div class="stop-num">${i+1}</div>
+        <div class="customer-info">
+          <div class="customer-name">${c.company}</div>
+          <div class="customer-sub">${c.contact||''}</div>
+          <div class="customer-sub">${[c.address,c.city].filter(Boolean).join(', ')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+          <span class="badge badge-${c.status}">${c.status}</span>
+          ${c.phone?`<a href="tel:${c.phone}" class="call-btn" onclick="event.stopPropagation()">Call</a>`:''}
+        </div>
+      </div>`).join('');
+  }
 }
 
 
-function openRouteMap() {
-  const zip = document.getElementById('day-zip').value;
-  if(!zip){alert('Select a zip code first.');return;}
-  const list = customers.filter(c=>c.zip===zip);
-  if(!list.length){alert('No contacts in this zip.');return;}
-  const addrs = list.map(c=>encodeURIComponent([c.address,c.city,c.state,c.zip].filter(Boolean).join(', ')));
+function isValidAddress(addr) {
+  if(!addr) return false;
+  const a = addr.toLowerCase().trim();
+  if(a.startsWith('p.o.') || a.startsWith('po box') || a.startsWith('p.o box') || a.startsWith('post office box')) return false;
+  if(a.length < 5) return false;
+  if(!/\d/.test(a)) return false;
+  return true;
+}
+
+function buildMapsUrl(origin, list) {
+  const validList = list.filter(c => isValidAddress(c.address));
+  if(!validList.length) return null;
+  const addrs = validList.map(c => encodeURIComponent([c.address,c.city,c.state,c.zip].filter(Boolean).join(', ')));
   const dest = addrs[addrs.length-1];
   const waypoints = addrs.slice(0,-1).join('|');
+  const originEnc = encodeURIComponent(origin);
+  return `https://www.google.com/maps/dir/?api=1&origin=${originEnc}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`;
+}
+
+function openRouteMap() {
+  const region = document.getElementById('day-region').value;
+  const zip = document.getElementById('day-zip') ? document.getElementById('day-zip').value : '';
+  if(!region && !zip){alert('Select a region first.');return;}
+  let list = customers;
+  if(zip) list = list.filter(c=>c.zip===zip);
+  else if(region) list = list.filter(c=>c.region===region);
+  const validList = list.filter(c=>isValidAddress(c.address));
+  const skipped = list.length - validList.length;
+  if(!validList.length){alert('No valid addresses found. Contacts may have PO boxes or missing addresses.');return;}
+  if(skipped > 0) console.log(`Skipped ${skipped} contacts with invalid/PO box addresses`);
+
+  // Build the maps link immediately (must happen synchronously for mobile Safari)
+  const fallbackOrigin = settings.coZip || '84095';
+  const fallbackUrl = buildMapsUrl(fallbackOrigin, validList);
+
+  // Create a hidden link and click it — works on mobile Safari unlike window.open in async callbacks
+  const doNavigate = (url) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   if(navigator.geolocation) {
+    // Show a loading state
+    const btn = document.querySelector('[onclick="openRouteMap()"]');
+    const origText = btn ? btn.textContent : '';
+    if(btn) btn.textContent = 'Getting location...';
+
     navigator.geolocation.getCurrentPosition(
       pos => {
-        const origin = pos.coords.latitude+','+pos.coords.longitude;
-        window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`,'_blank');
+        if(btn) btn.textContent = origText;
+        const origin = pos.coords.latitude + ',' + pos.coords.longitude;
+        const url = buildMapsUrl(origin, validList);
+        if(url) doNavigate(url);
       },
       () => {
-        const origin = settings.coZip || zip;
-        window.open(`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`,'_blank');
+        if(btn) btn.textContent = origText;
+        if(fallbackUrl) doNavigate(fallbackUrl);
       },
-      {timeout:5000}
+      {timeout:6000, enableHighAccuracy:false}
     );
   } else {
-    const origin = settings.coZip || zip;
-    window.open(`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`,'_blank');
+    if(fallbackUrl) doNavigate(fallbackUrl);
   }
 }
 
